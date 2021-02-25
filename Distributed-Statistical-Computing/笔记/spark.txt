@@ -1,0 +1,159 @@
+1、实时数据流处理；实时。速度非常快，平均而言是hadoop的100倍
+2、支持多种语言：
+scala 很快，简单易操作。
+python：使用spark像导入库一般。
+R：SparkR，比python，scala功能少。
+3、底层仍然是mapreduce；
+像hive一样进行了包装；
+可以进行交互式操作（hadoop不可以）；
+可以进行机器学习；
+支持SQL，数据框，机器学习with MLIIB，图形处理和流数据处理。
+允许自定义模块，函数；
+4、spark可以在很多分布式平台上应用。
+处理复杂的hive，hbase查询。
+5、速度快的原理
+worker间通信能力强，二者信息互传快，集成主板或交换机或宽带；
+worker可以运行多个任务，多个executor；
+worker上有独立的内存，用来存储最常用的数据；缓存数据可以在worker间快速传递，相当于共享内存。
+缺点：需要足够大的缓存。内存刚够用，不能运行spark；hadoop按行读入可以运行。
+官方要求：需要原始数据2到5倍内存。
+内存<—>速度，二者矛盾，空间换取速度。
+
+eg: 10G硬盘数据需要60G内存，精度要求提高占内存；
+32G服务器可用内存20G左右
+
+error：OOM，out of memory，内存不够。
+
+6、内容
+数据框
+机器学习库：旧版本；dataframe版
+Spark streaming
+
+7、运行
+spark-submit \
+--class  模块
+--master 提交在哪些节点
+-- num-executors 50  # 可以一个机器运行多个executors
+# 提交py，R文件
+
+# 可以保存、打印
+# 运行之前要想清楚内存是否够，内存消耗。
+# timy：内存消耗不大，主要用cpu，每台机器上exeor多；消耗系统资源也多
+  flat：io吞吐大，耗内存，每台机器上exeor少，每个extcutor的内存大；
+
+运行py
+# 设置python版本：非交互式
+PYSPARK_PYTHON=python3.8  spark-submit \
+  --master yarn \
+  examples/src/main/python/pi.py \
+  1000
+
+# python3.8 
+同时传参：myfun(**[······]) # 参数个数不能超过256个；python3.8允许任意长度参数。
+
+运行R
+  sparkR --master local[2]  # 伪分布式，虚拟2个
+
+
+方法一
+# 唤起 spark进行交互，选择py3.8 
+ PYSPARK_PYTHON=python3.8  pyspark
+
+方法二
+先启动py3
+import pyspark # spark的安装路径搜索不到
+import findspark
+findspark.init（‘path’）
+import pyspark
+
+8、spark中两个可用的api
+rdds：操作灵活，有向量等一些列操作；
+spark sql（类似pandas的数据框）：均可看做df；
+二者可以转化；
+
+（1）RDD resilient distributed dataset
+提供数据拆分方式；
+list可以转rdd；hdfs可以转rdd；
+自动计算内存，判断数据放的位置；
+rdd自动恢复失败节点数据（同hadoop相同）
+
+spark为什么能进行机器学习（hadoop不能）
+允许变量共享
+（1）常量：broadcast variable；广播变量，不可修改
+（2）变量：accumulators，允许修改
+二者需要区分清楚，会报错
+
+创建Rdd对象
+（1）将py数据对象传给worker节点
+（2）hdfs对象创建rdd
+
+首先创建sparkcontext
+import findspark
+echo $SPARK_HOME
+findspark.init("/usr/lib/spark-current")
+import pyspark
+conf = pyspark.SparkConf().setAppName("My First Spark RDD APP").setMaster("local")  # “yarn”，local是本地模式
+sc = pyspark.SparkContext(conf=conf)
+
+# 只能创建一个sc；先停止才能创新的
+sc.stop()
+sc = pyspark.SparkContext.getOrCreate()  # 之前有继承，没有创建
+
+data = [1, 2, 3, 4, 5]
+distData = sc.parallelize(data)
+distData # 可以想象为pd对象
+# 可以创建多个对象，进行复杂运算。
+
+# 可以从a local path on the machine, or a hdfs://, s3a://, etc URI 导入rdd对象
+licenseFile = sc.textFile(‘path’）# 从本地读入rdds
+# 可以读取文件夹；可以用正则表达式选择特定文件；压缩文件
+# rdd对象可以存为picklefile文件；
+
+# 分布式操作必须进行sc修改
+
+rdd
+mapreduce操作
+lineLengths = licenseFile.map(lambda s: len(s))
+totalLength = lineLengths.reduce(lambda a, b: a + b)
+
+persist() # 默认全部放到内存（确保内存足够），可以进行相关设置。
+unpersist（）放回到硬盘
+.cache() # 是persist的默认情况 
+
+————数据共享
+1、sc.broadcast  广播常量，各节点共享，不能修改。
+bcvar.value # 提取值
+2、sc.accumulator  # 累计 
+
+——————ML 机器学习
+
+
+——————文本处理分析
+Corpora语料库
+语序信息一般不能处理，舍弃；现在可以：识别情感、主题、语法审查、语言转录
+分词：jieba；大公司的api
+IDF：低频词多次出现加大权重。
+word2Vec：将文本信息转化为带有信号强度的向量；信号不具有含义，但能够表示强弱；
+n-gram : 选择 中心词 ，左右扩n，一般n为最多三四；随着n变异信息递减；可通过cv选择适当n。
+
+
+
+spark 可以通过.add 可以将py模块加载到spark的worder结点
+
+
+
+
+注：
+在parallelize后的数据采用集群中，否则都在local（master）
+
+
+因变量是否延误，>0延误；
+增加虚拟变量，是否us等；100多个变量。
+
+
+
+注：
+linux
+which python
+python --version
+pip3.6 install pandas --user 

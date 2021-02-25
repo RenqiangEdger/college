@@ -1,0 +1,49 @@
+Hive batch交互终端
+hive -e "dfs -ls /;"  # 查询根目录文件
+hive -f  /path/to/file/qqq.hql # 将查询语句写到hql文件
+
+hive 进入终端
+exit 退出
+dfs -ls /; # 不用加引号
+
+SQL语言：
+结尾加分号；表示结束
+关键字大小写不区分
+
+show databases； # 列出集群下的数据库
+show databases like "b*"; # 列出特定的数据库
+create database if not exists mydf location '/path';  # wherehouse 默认；可以指定路径
+
+drop  # 删除
+use   database # 使用
+
+# 创建表
+create table if not exists mydf.employee
+     name
+         string comment "names"
+     salary float coment ""
+ comment ""
+tableproperties  'creator'='','created_at' = '' ;
+
+# show tables
+
+# 链接外部表
+create external table if not exists stocks
+  symbol string
+  ymd  string
+
+TBLPROPERTIES('skip.header.line.count'='1', 'skip.footer.line.count'='2');
+row format delimited fields terminated by ',' # 分隔符
+location '/user/lifeng/data' ;  # data下的所有文件都可以识别吸收
+
+
+## hive类似的分布式数据库
+Pig 合并表等，分布式
+Hbase 基于google的big table；擅长实时更新，追加；中间工具，缓存数据在内存；不支持sql；
+Hive 支持与Hbase的通信，可以写hbase代码。
+
+
+
+
+
+
